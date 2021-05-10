@@ -24,6 +24,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
+	"maistra.io/api/client/versioned/fake"
+	servicemeshv1alpha1 "maistra.io/api/core/v1alpha1"
 
 	"istio.io/api/mesh/v1alpha1"
 	configmemory "istio.io/istio/pilot/pkg/config/memory"
@@ -33,8 +35,6 @@ import (
 	"istio.io/istio/pkg/config/mesh"
 	"istio.io/istio/pkg/config/schema/collections"
 	"istio.io/istio/pkg/kube"
-	servicemeshv1alpha1 "istio.io/istio/pkg/servicemesh/apis/servicemesh/v1alpha1"
-	"istio.io/istio/pkg/servicemesh/client/v1alpha1/clientset/versioned/fake"
 	"istio.io/istio/pkg/servicemesh/federation/common"
 )
 
@@ -197,12 +197,12 @@ func TestReconcile(t *testing.T) {
 		},
 	}
 	cs := controller.cs
-	fedwatch, err := cs.MaistraV1alpha1().MeshFederations(namespace).Watch(context.TODO(), metav1.ListOptions{})
+	fedwatch, err := cs.CoreV1alpha1().MeshFederations(namespace).Watch(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		t.Errorf("failed to watch for MeshFederation")
 		return
 	}
-	newFederation, err := cs.MaistraV1alpha1().MeshFederations(namespace).Create(context.TODO(), federation, metav1.CreateOptions{})
+	newFederation, err := cs.CoreV1alpha1().MeshFederations(namespace).Create(context.TODO(), federation, metav1.CreateOptions{})
 	if err != nil {
 		t.Errorf("failed to create MeshFederation")
 		fedwatch.Stop()
@@ -258,12 +258,12 @@ func TestReconcile(t *testing.T) {
 	}
 
 	// now delete
-	fedwatch, err = cs.MaistraV1alpha1().MeshFederations(namespace).Watch(context.TODO(), metav1.ListOptions{})
+	fedwatch, err = cs.CoreV1alpha1().MeshFederations(namespace).Watch(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		t.Errorf("failed to watch for MeshFederation")
 		return
 	}
-	if err = cs.MaistraV1alpha1().MeshFederations(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{}); err != nil {
+	if err = cs.CoreV1alpha1().MeshFederations(namespace).Delete(context.TODO(), name, metav1.DeleteOptions{}); err != nil {
 		t.Errorf("error deleting MeshFederation")
 		fedwatch.Stop()
 		return
