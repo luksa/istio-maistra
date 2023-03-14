@@ -21,7 +21,7 @@ const (
 // InterceptRuleMgr configures networking tables (e.g. iptables or nftables) for
 // redirecting traffic to an Istio proxy.
 type InterceptRuleMgr interface {
-	Program(podName, netns string, redirect *Redirect) error
+	Program(podName, netns string, redirect *Redirect, useRulesFile bool) error
 }
 
 type InterceptRuleMgrCtor func() InterceptRuleMgr

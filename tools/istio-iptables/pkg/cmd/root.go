@@ -139,6 +139,7 @@ func constructConfig() *config.Config {
 		RedirectDNS:             viper.GetBool(constants.RedirectDNS),
 		DropInvalid:             viper.GetBool(constants.DropInvalid),
 		CaptureAllDNS:           viper.GetBool(constants.CaptureAllDNS),
+		UseRulesFile:            viper.GetBool(constants.UseRulesFile),
 		OutputPath:              viper.GetString(constants.OutputPath),
 		NetworkNamespace:        viper.GetString(constants.NetworkNamespace),
 		CNIMode:                 viper.GetBool(constants.CNIMode),
@@ -358,6 +359,11 @@ func bindFlags(cmd *cobra.Command, args []string) {
 	}
 	viper.SetDefault(constants.CaptureAllDNS, false)
 
+	if err := viper.BindPFlag(constants.UseRulesFile, cmd.Flags().Lookup(constants.UseRulesFile)); err != nil {
+		handleError(err)
+	}
+	viper.SetDefault(constants.UseRulesFile, true)
+
 	if err := viper.BindPFlag(constants.OutputPath, cmd.Flags().Lookup(constants.OutputPath)); err != nil {
 		handleError(err)
 	}
@@ -452,6 +458,8 @@ func bindCmdlineFlags(rootCmd *cobra.Command) {
 
 	rootCmd.Flags().Bool(constants.CaptureAllDNS, false,
 		"Instead of only capturing DNS traffic to DNS server IP, capture all DNS traffic at port 53. This setting is only effective when redirect dns is enabled.")
+
+	rootCmd.Flags().Bool(constants.UseRulesFile, true, "Pass the iptables rules to iptables-restore via a file instead of stdin.")
 
 	rootCmd.Flags().String(constants.OutputPath, "", "A file path to write the applied iptables rules to.")
 

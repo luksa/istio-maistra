@@ -105,6 +105,7 @@ const (
 	RedirectDNS               = "redirect-dns"
 	DropInvalid               = "drop-invalid"
 	CaptureAllDNS             = "capture-all-dns"
+	UseRulesFile              = "use-rules-file"
 	OutputPath                = "output-paths"
 	NetworkNamespace          = "network-namespace"
 	CNIMode                   = "cni-mode"

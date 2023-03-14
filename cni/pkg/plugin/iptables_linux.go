@@ -32,7 +32,7 @@ var getNs = ns.GetNS
 
 // Program defines a method which programs iptables based on the parameters
 // provided in Redirect.
-func (ipt *iptables) Program(podName, netns string, rdrct *Redirect) error {
+func (ipt *iptables) Program(podName, netns string, rdrct *Redirect, useRulesFile bool) error {
 	viper.Set(constants.CNIMode, true)
 	viper.Set(constants.NetworkNamespace, netns)
 	viper.Set(constants.EnvoyPort, rdrct.targetPort)
@@ -50,6 +50,7 @@ func (ipt *iptables) Program(podName, netns string, rdrct *Redirect) error {
 	drf := dryRunFilePath.Get()
 	viper.Set(constants.DryRun, drf != "")
 	viper.Set(constants.OutputPath, drf)
+	viper.Set(constants.UseRulesFile, useRulesFile)
 	viper.Set(constants.RedirectDNS, rdrct.dnsRedirect)
 	viper.Set(constants.CaptureAllDNS, rdrct.dnsRedirect)
 	viper.Set(constants.DropInvalid, rdrct.invalidDrop)

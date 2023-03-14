@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -270,7 +270,7 @@ func ConfigureRoutes(cfg *config.Config, ext dep.Dependencies) error {
 	}
 	if ext != nil && cfg.CNIMode {
 		command := os.Args[0]
-		return ext.Run(command, constants.CommandConfigureRoutes)
+		return ext.Run(command, nil, constants.CommandConfigureRoutes)
 	}
 	if err := configureIPv6Addresses(cfg); err != nil {
 		return err
@@ -311,9 +311,9 @@ func configureIPv6Addresses(cfg *config.Config) error {
 func (cfg *IptablesConfigurator) Run() {
 	defer func() {
 		// Best effort since we don't know if the commands exist
-		_ = cfg.ext.Run(constants.IPTABLESSAVE)
+		_ = cfg.ext.Run(constants.IPTABLESSAVE, nil)
 		if cfg.cfg.EnableInboundIPv6 {
-			_ = cfg.ext.Run(constants.IP6TABLESSAVE)
+			_ = cfg.ext.Run(constants.IP6TABLESSAVE, nil)
 		}
 	}()
 
@@ -583,7 +583,7 @@ func (f UDPRuleApplier) RunV4(args ...string) {
 	case DeleteOps:
 		deleteArgs := []string{"-t", f.table, opsToString[f.ops], f.chain}
 		deleteArgs = append(deleteArgs, args...)
-		f.ext.RunQuietlyAndIgnore(f.cmd, deleteArgs...)
+		f.ext.RunQuietlyAndIgnore(f.cmd, nil, deleteArgs...)
 	}
 }
 
@@ -594,7 +594,7 @@ func (f UDPRuleApplier) RunV6(args ...string) {
 	case DeleteOps:
 		deleteArgs := []string{"-t", f.table, opsToString[f.ops], f.chain}
 		deleteArgs = append(deleteArgs, args...)
-		f.ext.RunQuietlyAndIgnore(f.cmd, deleteArgs...)
+		f.ext.RunQuietlyAndIgnore(f.cmd, nil, deleteArgs...)
 	}
 }
 
@@ -762,9 +762,9 @@ func (cfg *IptablesConfigurator) createRulesFile(f *os.File, contents string) er
 func (cfg *IptablesConfigurator) executeIptablesCommands(commands [][]string) {
 	for _, cmd := range commands {
 		if len(cmd) > 1 {
-			cfg.ext.RunOrFail(cmd[0], cmd[1:]...)
+			cfg.ext.RunOrFail(cmd[0], nil, cmd[1:]...)
 		} else {
-			cfg.ext.RunOrFail(cmd[0])
+			cfg.ext.RunOrFail(cmd[0], nil)
 		}
 	}
 }
@@ -780,27 +780,31 @@ func (cfg *IptablesConfigurator) executeIptablesRestoreCommand(isIpv4 bool) erro
 		filename = fmt.Sprintf("ip6tables-rules-%d.txt", time.Now().UnixNano())
 		cmd = constants.IP6TABLESRESTORE
 	}
-	var rulesFile *os.File
-	var err error
-	if cfg.cfg.OutputPath != "" {
-		// Print the iptables rules into the given output file.
-		rulesFile, err = os.OpenFile(cfg.cfg.OutputPath, os.O_CREATE|os.O_WRONLY, 0o644)
-		if err != nil {
-			return fmt.Errorf("unable to open iptables rules output file %v: %v", cfg.cfg.OutputPath, err)
+	if cfg.cfg.UseRulesFile {
+		var rulesFile *os.File
+		var err error
+		if cfg.cfg.OutputPath != "" {
+			// Print the iptables rules into the given output file.
+			rulesFile, err = os.OpenFile(cfg.cfg.OutputPath, os.O_CREATE|os.O_WRONLY, 0o644)
+			if err != nil {
+				return fmt.Errorf("unable to open iptables rules output file %v: %v", cfg.cfg.OutputPath, err)
+			}
+		} else {
+			// Otherwise create a temporary file to write iptables rules to, which will be cleaned up at the end.
+			rulesFile, err = os.CreateTemp("", filename)
+			if err != nil {
+				return fmt.Errorf("unable to create iptables-restore file: %v", err)
+			}
+			defer os.Remove(rulesFile.Name())
 		}
+		if err := cfg.createRulesFile(rulesFile, data); err != nil {
+			return err
+		}
+		// --noflush to prevent flushing/deleting previous contents from table
+		cfg.ext.RunOrFail(cmd, nil, "--noflush", rulesFile.Name())
 	} else {
-		// Otherwise create a temporary file to write iptables rules to, which will be cleaned up at the end.
-		rulesFile, err = os.CreateTemp("", filename)
-		if err != nil {
-			return fmt.Errorf("unable to create iptables-restore file: %v", err)
-		}
-		defer os.Remove(rulesFile.Name())
+		cfg.ext.RunOrFail(cmd, strings.NewReader(data), "--noflush")
 	}
-	if err := cfg.createRulesFile(rulesFile, data); err != nil {
-		return err
-	}
-	// --noflush to prevent flushing/deleting previous contents from table
-	cfg.ext.RunOrFail(cmd, "--noflush", rulesFile.Name())
 	return nil
 }
 

@@ -77,6 +77,7 @@ type Config struct {
 	// Add plugin-specific flags here
 	LogLevel      string     `json:"log_level"`
 	LogUDSAddress string     `json:"log_uds_address"`
+	UseRulesFile  bool       `json:"use_rules_file"`
 	Kubernetes    Kubernetes `json:"kubernetes"`
 }
 
@@ -272,7 +273,7 @@ func CmdAdd(args *skel.CmdArgs) (err error) {
 								interceptRuleMgrType)
 						} else {
 							rulesMgr := interceptMgrCtor()
-							if err := rulesMgr.Program(podName, args.Netns, redirect); err != nil {
+							if err := rulesMgr.Program(podName, args.Netns, redirect, conf.UseRulesFile); err != nil {
 								return err
 							}
 						}
